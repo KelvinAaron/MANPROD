@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PROVIDER
+  SEEKER
+  ADMIN
+}
+
+enum DocStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id               Int              @id @default(autoincrement())
+  email            String           @unique
+  passwordHash     String
+  name             String
+  phone            String?
+  role             Role             @default(SEEKER)
+  registrationDate DateTime         @default(now())
+  provider         ServiceProvider?
+  seeker           ServiceSeeker?
+  admin            Administrator?
+}
+
+model ServiceProvider {
+  id            Int                    @id @default(autoincrement())
+  userId        Int                    @unique
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillSet      String
+  bio           String?
+  isVerified    Boolean                @default(false)
+  averageRating Float                  @default(0)
+  documents     VerificationDocument[]
+  listings      ServiceListing[]
+}
+
+model ServiceSeeker {
+  id       Int       @id @default(autoincrement())
+  userId   Int       @unique
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+}
+
+model Administrator {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationDocument {
+  id         Int             @id @default(autoincrement())
+  providerId Int
+  provider   ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  docType    String
+  filePath   String
+  uploadDate DateTime        @default(now())
+  status     DocStatus       @default(PENDING)
+}
+
+model ServiceListing {
+  id          Int             @id @default(autoincrement())
+  providerId  Int
+  provider    ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String
+  price       Float
+  location    String
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  bookings    Booking[]
+}
+
+model Booking {
+  id          Int            @id @default(autoincrement())
+  listingId   Int
+  listing     ServiceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  seekerId    Int
+  seeker      ServiceSeeker  @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  bookingDate DateTime       @default(now())
+  status      BookingStatus  @default(PENDING)
+  review      Review?
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int      @unique
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rating     Int
+  comment    String?
+  datePosted DateTime @default(now())
+}
