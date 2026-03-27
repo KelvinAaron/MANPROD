@@ -9,6 +9,7 @@ import { X, Loader2 } from 'lucide-react'
 
 export default function SeekerBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [reviewModal, setReviewModal] = useState<{ bookingId: number; title: string } | null>(null)
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -18,6 +19,7 @@ export default function SeekerBookingsPage() {
     const res = await fetch('/api/bookings')
     const data = await res.json()
     setBookings(Array.isArray(data) ? data : [])
+    setLoading(false)
   }
 
   useEffect(() => { load() }, [])
@@ -61,7 +63,22 @@ export default function SeekerBookingsPage() {
         <p className="text-gray-500 text-sm mt-1">Track and manage your service bookings</p>
       </div>
 
-      {bookings.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-pulse">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col gap-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-1/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/4" />
+                </div>
+                <div className="h-7 w-24 bg-gray-200 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : bookings.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <p className="text-gray-400">No bookings yet.</p>
         </div>

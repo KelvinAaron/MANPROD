@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Star, BadgeCheck, MapPin } from 'lucide-react'
+import { Star, BadgeCheck, MapPin, CheckCircle2 } from 'lucide-react'
 import { formatCurrency, getInitials } from '@/lib/utils'
 
 interface ProviderCardProps {
@@ -9,6 +9,7 @@ interface ProviderCardProps {
     bio?: string | null
     isVerified: boolean
     averageRating: number
+    completedJobsCount?: number
     user: { name: string }
     listings: Array<{
       id: number
@@ -19,8 +20,15 @@ interface ProviderCardProps {
   }
 }
 
+function formatJobCount(count: number): string {
+  if (count >= 1000) return '1000+'
+  if (count >= 100) return '100+'
+  return String(count)
+}
+
 export default function ProviderCard({ provider }: ProviderCardProps) {
   const listing = provider.listings[0]
+  const jobCount = provider.completedJobsCount ?? 0
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-3">
@@ -37,11 +45,19 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
             )}
           </div>
           <p className="text-sm text-primary-600 font-medium">{provider.skillSet}</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <Star size={13} className="text-yellow-400 fill-yellow-400" />
-            <span className="text-xs text-gray-600">
-              {provider.averageRating > 0 ? provider.averageRating.toFixed(1) : 'No ratings yet'}
-            </span>
+          <div className="flex items-center gap-3 mt-0.5">
+            <div className="flex items-center gap-1">
+              <Star size={13} className="text-yellow-400 fill-yellow-400" />
+              <span className="text-xs text-gray-600">
+                {provider.averageRating > 0 ? provider.averageRating.toFixed(1) : 'No ratings yet'}
+              </span>
+            </div>
+            {jobCount > 0 && (
+              <div className="flex items-center gap-1">
+                <CheckCircle2 size={13} className="text-green-500" />
+                <span className="text-xs text-gray-600">{formatJobCount(jobCount)} jobs done</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

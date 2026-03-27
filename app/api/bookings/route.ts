@@ -71,5 +71,24 @@ export async function POST(req: NextRequest) {
     },
   })
 
+  // Notify the provider
+  const providerRecord = await prisma.serviceProvider.findUnique({
+    where: { id: listing.providerId },
+    select: { userId: true },
+  })
+  const seekerUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  })
+  if (providerRecord) {
+    await prisma.notification.create({
+      data: {
+        userId: providerRecord.userId,
+        title: 'New Booking Request',
+        message: `${seekerUser?.name ?? 'A client'} has booked your service: "${listing.title}".`,
+      },
+    })
+  }
+
   return NextResponse.json(booking, { status: 201 })
 }

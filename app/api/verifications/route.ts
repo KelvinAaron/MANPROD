@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 
-// GET — provider fetches their own docs; admin fetches all pending
+// GET — provider: own docs + rejectionReason; admin: grouped applications (one per provider)
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -21,23 +21,44 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { uploadDate: 'asc' },
     })
-    return NextResponse.json(docs)
+
+    // Group documents by provider — one application card per provider
+    const appMap = new Map<number, any>()
+    for (const doc of docs) {
+      const pid = doc.providerId
+      if (!appMap.has(pid)) {
+        appMap.set(pid, {
+          providerId: pid,
+          provider: doc.provider,
+          submittedAt: doc.uploadDate,
+          documents: [],
+        })
+      }
+      appMap.get(pid).documents.push({
+        id: doc.id,
+        docType: doc.docType,
+        filePath: doc.filePath,
+        uploadDate: doc.uploadDate,
+      })
+    }
+
+    return NextResponse.json(Array.from(appMap.values()))
   }
 
   if (role === 'PROVIDER') {
     const provider = await prisma.serviceProvider.findUnique({ where: { userId } })
-    if (!provider) return NextResponse.json([])
+    if (!provider) return NextResponse.json({ documents: [], rejectionReason: null })
     const docs = await prisma.verificationDocument.findMany({
       where: { providerId: provider.id },
       orderBy: { uploadDate: 'desc' },
     })
-    return NextResponse.json(docs)
+    return NextResponse.json({ documents: docs, rejectionReason: provider.rejectionReason })
   }
 
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
-// POST — provider uploads a verification document
+// POST — provider uploads one document (called per-doc after DELETE clears old pending)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== 'PROVIDER') {
@@ -64,7 +85,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'File must be under 5MB' }, { status: 400 })
   }
 
-  // Save file to /public/uploads/
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
   const ext = file.name.split('.').pop()
@@ -83,4 +103,22 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json(doc, { status: 201 })
+}
+
+// DELETE — provider clears their pending docs before submitting a fresh application
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session || (session.user as any).role !== 'PROVIDER') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const userId = Number((session.user as any).id)
+  const provider = await prisma.serviceProvider.findUnique({ where: { userId } })
+  if (!provider) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  await prisma.verificationDocument.deleteMany({
+    where: { providerId: provider.id, status: 'PENDING' },
+  })
+
+  return NextResponse.json({ success: true })
 }

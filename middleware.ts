@@ -28,7 +28,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
-        const protectedPrefixes = ['/admin', '/provider', '/seeker', '/redirect']
+        const protectedPrefixes = ['/admin', '/provider', '/seeker', '/redirect', '/profile']
         if (protectedPrefixes.some((p) => pathname.startsWith(p))) {
           return !!token
         }
@@ -39,5 +39,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ['/admin/:path*', '/provider/:path*', '/seeker/:path*', '/redirect'],
+  matcher: ['/admin/:path*', '/provider/:path*', '/seeker/:path*', '/redirect', '/profile'],
 }

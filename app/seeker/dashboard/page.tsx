@@ -10,9 +10,15 @@ import { formatDate } from '@/lib/utils'
 export default function SeekerDashboard() {
   const { data: session } = useSession()
   const [bookings, setBookings] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/bookings').then((r) => r.json()).then((d) => setBookings(Array.isArray(d) ? d : []))
+    fetch('/api/bookings')
+      .then((r) => r.json())
+      .then((d) => {
+        setBookings(Array.isArray(d) ? d : [])
+        setLoading(false)
+      })
   }, [])
 
   const active = bookings.filter((b) => ['PENDING', 'CONFIRMED'].includes(b.status))
@@ -41,21 +47,27 @@ export default function SeekerDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'Active Bookings', value: active.length, href: '/seeker/bookings' },
-          { label: 'Completed Jobs', value: completed.length, href: '/seeker/bookings' },
-          { label: 'Reviews Left', value: completed.filter((b) => b.review).length },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-3xl font-bold text-gray-900">{s.value}</p>
-            <p className="text-sm text-gray-500 mt-1">{s.label}</p>
-            {s.href && (
-              <Link href={s.href} className="text-xs text-primary-600 hover:underline mt-1 inline-flex items-center gap-1">
-                View <ChevronRight size={12} />
-              </Link>
-            )}
-          </div>
-        ))}
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 h-24 animate-pulse" />
+          ))
+        ) : (
+          [
+            { label: 'Active Bookings', value: active.length, href: '/seeker/bookings' },
+            { label: 'Completed Jobs', value: completed.length, href: '/seeker/bookings' },
+            { label: 'Reviews Left', value: completed.filter((b) => b.review).length },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <p className="text-3xl font-bold text-gray-900">{s.value}</p>
+              <p className="text-sm text-gray-500 mt-1">{s.label}</p>
+              {s.href && (
+                <Link href={s.href} className="text-xs text-primary-600 hover:underline mt-1 inline-flex items-center gap-1">
+                  View <ChevronRight size={12} />
+                </Link>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Recent bookings */}
@@ -64,7 +76,20 @@ export default function SeekerDashboard() {
           <h2 className="font-semibold text-gray-900">Recent Bookings</h2>
           <Link href="/seeker/bookings" className="text-sm text-primary-600 hover:underline">View all</Link>
         </div>
-        {bookings.length === 0 ? (
+
+        {loading ? (
+          <div className="flex flex-col gap-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="py-3 flex items-center justify-between animate-pulse">
+                <div className="flex flex-col gap-2 flex-1">
+                  <div className="h-3.5 bg-gray-200 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                </div>
+                <div className="h-6 w-20 bg-gray-200 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : bookings.length === 0 ? (
           <div className="text-center py-8">
             <Clock size={32} className="mx-auto text-gray-300 mb-2" />
             <p className="text-sm text-gray-400">No bookings yet.</p>
