@@ -56,8 +56,9 @@ model ServiceProvider {
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   skillSet      String
   bio           String?
-  isVerified    Boolean                @default(false)
-  averageRating Float                  @default(0)
+  isVerified      Boolean                @default(false)
+  rejectionReason String?
+  averageRating   Float                  @default(0)
   documents     VerificationDocument[]
   listings      ServiceListing[]
 }
