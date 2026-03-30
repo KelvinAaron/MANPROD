@@ -91,8 +91,12 @@ export default function VerificationPage() {
       if (res.ok) {
         successCount++
       } else {
-        const d = await res.json()
-        toast.error(`Failed to upload "${item.docType}": ${d.error ?? 'Unknown error'}`)
+        let errorMsg = 'Unknown error'
+        try {
+          const d = await res.json()
+          errorMsg = d.error ?? 'Unknown error'
+        } catch {}
+        toast.error(`Failed to upload "${item.docType}": ${errorMsg}`)
       }
     }
 

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 
 // GET — provider: own docs + rejectionReason; admin: grouped applications (one per provider)
 export async function GET(req: NextRequest) {
@@ -86,18 +84,14 @@ export async function POST(req: NextRequest) {
   }
 
   const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
-  const ext = file.name.split('.').pop()
-  const filename = `${provider.id}-${Date.now()}.${ext}`
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-  await mkdir(uploadDir, { recursive: true })
-  await writeFile(path.join(uploadDir, filename), buffer)
+  const base64 = Buffer.from(bytes).toString('base64')
+  const dataUrl = `data:${file.type};base64,${base64}`
 
   const doc = await prisma.verificationDocument.create({
     data: {
       providerId: provider.id,
       docType,
-      filePath: `/uploads/${filename}`,
+      filePath: dataUrl,
       status: 'PENDING',
     },
   })
