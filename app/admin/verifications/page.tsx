@@ -29,6 +29,18 @@ export default function AdminVerificationsPage() {
   const [rejectingId, setRejectingId] = useState<number | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
+  function openDocument(filePath: string) {
+    if (filePath.startsWith('data:')) {
+      const [header, base64] = filePath.split(',')
+      const mimeType = header.split(':')[1].split(';')[0]
+      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      const blob = new Blob([bytes], { type: mimeType })
+      window.open(URL.createObjectURL(blob), '_blank')
+    } else {
+      window.open(filePath, '_blank')
+    }
+  }
+
   async function load() {
     setLoading(true)
     const res = await fetch('/api/verifications')
@@ -121,14 +133,12 @@ export default function AdminVerificationsPage() {
                       <p className="text-sm font-medium text-gray-800">{doc.docType}</p>
                       <p className="text-xs text-gray-400">Uploaded {formatDate(doc.uploadDate)}</p>
                     </div>
-                    <a
-                      href={doc.filePath}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => openDocument(doc.filePath)}
                       className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline whitespace-nowrap"
                     >
                       View <ExternalLink size={11} />
-                    </a>
+                    </button>
                   </div>
                 ))}
               </div>
